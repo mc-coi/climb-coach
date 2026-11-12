@@ -77,7 +77,7 @@
   function demo(){return {id:uid(),name:'Practice meet',date:today(),demo:true,grades:{...DEFAULT_GRADES},people:['Alex Morgan','Jordan Lee','Casey Taylor','Riley Parker','Sam Rivera','Avery Chen','Quinn Davis','Morgan Ellis'].map(makePerson)}}
   try{const raw=localStorage.getItem(STORAGE);db=raw?JSON.parse(raw):null;if(db&&(!Array.isArray(db.meets)||!db.meets.length))throw Error('Invalid saved meet data');if(db)for(const m of db.meets)validBackup({version:1,meet:m})}catch(e){storageError=true;db=null}
   if(!db){const d=demo();db={meets:[d],active:d.id,config:{}}}db.config ||= {};if(!db.meets.some(m=>m.id===db.active))db.active=db.meets[0].id;
-  let selected=null,filter='all',gradeType='rope',selectedGrade='',busy=false,token='',tokenExpiry=0,authorizedSheet='',toastTimer;let confirmation=null;
+  let selected=null,filter='all',gradeType='boulder',selectedGrade='',busy=false,token='',tokenExpiry=0,authorizedSheet='',toastTimer;let confirmation=null;
   const meet=()=>db.meets.find(m=>m.id===db.active),person=()=>meet().people.find(p=>p.id===selected);
   function persist(){try{localStorage.setItem(STORAGE,JSON.stringify(db));storageError=false;$('#storageNote').textContent='Saved on this device · Export a backup before changing browsers or clearing site data.'}catch(e){storageError=true;$('#storageNote').textContent='Browser storage is unavailable. Keep this page open and export a backup now.';notify('Could not save on this device. Export a backup before closing.',true)}}
   function notify(message,error=false){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').className='toast show'+(error?' error':'');toastTimer=setTimeout(()=>$('#toast').className='toast',error?10000:4500)}
