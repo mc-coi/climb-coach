@@ -76,22 +76,26 @@ const syncSource=html.slice(html.indexOf('  async function syncScores()'),html.i
 async function syncScenario(kind){
   const p={name:'Alex',category:'Boy',row:2,present:true,climbs:climbs(['V2','V4']),baseline:{name:'Alex',category:'Boy',present:true,grades:['V2','','']}};
   const m={connection:{id:'test-sheet',title:'Meet'},grades:g,people:[p]};
+  if(kind==='attendance-only'){
+    p.climbs=[];
+    p.baseline={name:'Alex',category:'Boy',present:false,grades:['','','']};
+  }
   const before=JSON.stringify(p.baseline),writes=[],messages=[];
   const context={token:'test-token',tokenExpiry:Date.now()+60000,busy:false,meet:()=>m,
-    $:()=>({disabled:false}),confirmAction:async()=>true,renderCard(){},render(){},persist(){},
+    $:()=>({disabled:false}),confirmAction:async()=>true,renderCard(){},renderRoster(){},renderRosterSync(){},render(){},persist(){},
     notify:(message,error)=>messages.push({message,error}),
     api:async(id,path,options)=>{writes.push(JSON.parse(options.body));if(kind==='denied')throw Error('Google denied access.');return{}},
     readRanges:async(id,ranges,format)=>{
       if(format==='FORMULA')return ranges.map((r,i)=>kind==='formula'&&i===0?[['=TRUE']]:[[true]]);
-      if(ranges.length===2){const row=[true,kind==='conflict'?'Someone else':'Alex','Boy','V2',100,'',0,''];return [[[],row],Object.entries(g)];}
+      if(ranges.length===2){const row=kind==='attendance-only'?[false,'Alex','Boy','None',0,'None',0,'None']:[true,kind==='conflict'?'Someone else':'Alex','Boy','V2',100,'',0,''];return [[[],row],Object.entries(g)];}
       if(kind==='readback-failed')throw Error('Network connection lost.');
-      return [[[true,'Alex','Boy','V4',120,'V2',100,'None']]];
+      return kind==='attendance-only'?[[[true,'Alex','Boy','None',0,'None',0,'None']]]:[[[true,'Alex','Boy','V4',120,'V2',100,'None']]];
     }
   };
   if(kind==='expired')context.tokenExpiry=0;
   vm.runInNewContext(core+syncSource+'\nglobalThis.run = syncScores;',context);
   await context.run();
-  if(kind==='success'){
+  if(kind==='success'||kind==='attendance-only'){
     assert.equal(writes.length,1);assert.deepEqual(writes[0].data.map(x=>x.range),["'Meet'!A2","'Meet'!D2","'Meet'!F2","'Meet'!H2"]);
     assert.equal(dirty(p,g),false);assert.ok(messages.some(x=>x.message.includes('synced and verified')));
   } else {
@@ -113,6 +117,6 @@ async function syncScenario(kind){
   titles.push("Nov 18 - Coach's Meet");
   assert.deepEqual(Array.from((await discover('copy')).titles),['DATE - TEAM',"Nov 18 - Coach's Meet"]);
   console.log('PASS refreshed tab list discovers new meet tabs and skips unrelated tabs');tests++;
-  for(const kind of ['success','conflict','formula','denied','expired','readback-failed'])await syncScenario(kind);
+  for(const kind of ['success','attendance-only','conflict','formula','denied','expired','readback-failed'])await syncScenario(kind);
   console.log(`${tests} tests passed. All inline scripts parse successfully.`);
 })().catch(e=>{console.error(e);process.exitCode=1});
